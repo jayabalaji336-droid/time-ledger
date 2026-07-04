@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cover:#1B3A2F;
+    --cover-dark:#12281F;
+    --page:#F6F1E4;
+    --page-line:#E4DCC6;
+    --ink:#22303A;
+    --ink-soft:#5B6B66;
+    --rule:#B5533C;
+    --brass:#8F6423;
+    --brass-bg:#EFE2C6;
+    --danger:#9C3B3B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--cover);
+    background-image:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.04), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.15), transparent 60%);
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink);
+    padding:40px 16px 80px;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+  }
+  .cover-label{
+    text-align:center;
+    color:#D8CFA8;
+    font-size:12px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    margin-bottom:18px;
+    opacity:0.75;
+  }
+  .ledger{
+    background:var(--page);
+    border-radius:3px;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35), 0 2px 0 rgba(255,255,255,0.4) inset;
+    position:relative;
+    padding:36px 36px 36px 64px;
+    overflow:hidden;
+  }
+  .ledger::before{
+    content:'';
+    position:absolute;
+    top:0; bottom:0; left:44px;
+    width:1px;
+    background:var(--rule);
+    opacity:0.55;
+  }
+  .ledger::after{
+    content:'';
+    position:absolute;
+    top:0; bottom:0; left:47px;
+    width:1px;
+    background:var(--rule);
+    opacity:0.2;
+  }
+  header{
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:32px;
+    margin:0 0 4px;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .tagline{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .rate-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px dashed var(--page-line);
+  }
+  .rate-row label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--ink-soft);
+  }
+  .rate-row .rupee{
+    font-size:14px;
+    color:var(--brass);
+  }
+  input[type="number"], input[type="time"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid var(--page-line);
+    border-radius:3px;
+    padding:7px 10px;
+  }
+  input[type="number"]{width:90px;}
+  input:focus{outline:2px solid var(--rule); outline-offset:1px;}
+
+  .entry-form{
+    margin-top:26px;
+    display:grid;
+    grid-template-columns:1fr 1fr 1.4fr auto;
+    gap:12px;
+    align-items:end;
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+  }
+  .field input{width:100%;}
+  button{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    border-radius:3px;
+    border:1px solid transparent;
+  }
+  .btn-add{
+    background:var(--cover);
+    color:#F6F1E4;
+    padding:9px 18px;
+    border:1px solid var(--cover-dark);
+    white-space:nowrap;
+  }
+  .btn-add:hover{background:var(--cover-dark);}
+  .error-msg{
+    font-size:12px;
+    color:var(--danger);
+    margin-top:8px;
+    min-height:14px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:30px;
+    font-size:13px;
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    font-weight:500;
+    padding:0 8px 8px;
+    border-bottom:1px solid var(--ink);
+  }
+  thead th.num, tbody td.num{text-align:right;}
+  tbody td{
+    padding:10px 8px;
+    border-bottom:1px solid var(--page-line);
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:rgba(181,83,60,0.05);}
+  td.amount{color:var(--brass); font-weight:600;}
+  .del-btn{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:16px;
+    padding:0 4px;
+    line-height:1;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .empty-row td{
+    text-align:center;
+    color:var(--ink-soft);
+    padding:24px 8px;
+    font-style:normal;
+  }
+
+  .balance{
+    margin-top:34px;
+    padding-top:24px;
+    border-top:2px solid var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .balance-figs{
+    display:flex;
+    gap:28px;
+  }
+  .balance-figs .fig .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .balance-figs .fig .val{
+    font-size:20px;
+    font-weight:600;
+  }
+  .stamp{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    border:3px double var(--brass);
+    color:var(--brass);
+    background:var(--brass-bg);
+    padding:10px 20px;
+    border-radius:4px;
+    transform:rotate(-3deg);
+    text-align:center;
+    line-height:1.2;
+    box-shadow:0 2px 4px rgba(0,0,0,0.08);
+  }
+  .stamp .stamp-amt{font-size:22px;}
+  .stamp .stamp-sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+
+  .actions-row{
+    margin-top:22px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--page-line);
+    color:var(--ink-soft);
+    padding:7px 14px;
+    font-size:12px;
+  }
+  .btn-ghost:hover{border-color:var(--ink-soft); color:var(--ink);}
+
+  .note{
+    margin-top:18px;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width:640px){
+    .ledger{padding:26px 18px 26px 40px;}
+    .ledger::before{left:24px;}
+    .ledger::after{left:27px;}
+    .entry-form{grid-template-columns:1fr 1fr; }
+    .entry-form .btn-add{grid-column:1 / -1;}
+    .balance{flex-direction:column; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="cover-label">Bound register &middot; today's entries</p>
+  <div class="ledger">
+    <header>
+      <h1>Time Ledger</h1>
+      <p class="tagline">Log a start and end time, get the duration and its rupee value.</p>
+      <div class="rate-row">
+        <label for="rateInput">Rate</label>
+        <span class="rupee">₹</span>
+        <input type="number" id="rateInput" value="1800" min="0" step="1">
+        <span style="font-size:13px; color:var(--ink-soft);">per hour</span>
+      </div>
+    </header>
+
+    <div class="entry-form">
+      <div class="field">
+        <label for="startInput">Start</label>
+        <input type="time" id="startInput">
+      </div>
+      <div class="field">
+        <label for="endInput">End</label>
+        <input type="time" id="endInput">
+      </div>
+      <div class="field">
+        <label for="noteInput">Note (optional)</label>
+        <input type="text" id="noteInput" placeholder="e.g. client call">
+      </div>
+      <button class="btn-add" id="addBtn">Add entry</button>
+    </div>
+    <p class="error-msg" id="errorMsg"></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Note</th>
+          <th class="num">Duration</th>
+          <th class="num">Amount</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="entryBody">
+        <tr class="empty-row"><td colspan="6">No entries yet. Add your first block of time above.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="balance">
+      <div class="balance-figs">
+        <div class="fig">
+          <div class="label">Total time</div>
+          <div class="val" id="totalTime">0h 0m</div>
+        </div>
+        <div class="fig">
+          <div class="label">Entries</div>
+          <div class="val" id="totalEntries">0</div>
+        </div>
+      </div>
+      <div class="stamp">
+        <div class="stamp-sub">Day's balance</div>
+        <div class="stamp-amt" id="totalAmount">₹0</div>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn-ghost" id="downloadBtn">Download summary</button>
+      <button class="btn-ghost" id="clearBtn">Clear day</button>
+    </div>
+    <p class="note">Entries live in this browser tab only — refreshing the page starts a fresh day.</p>
+  </div>
+</div>
+
+<script>
+  let entries = [];
+  let nextId = 1;
+
+  const rateInput = document.getElementById('rateInput');
+  const startInput = document.getElementById('startInput');
+  const endInput = document.getElementById('endInput');
+  const noteInput = document.getElementById('noteInput');
+  const addBtn = document.getElementById('addBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const entryBody = document.getElementById('entryBody');
+  const totalTimeEl = document.getElementById('totalTime');
+  const totalEntriesEl = document.getElementById('totalEntries');
+  const totalAmountEl = document.getElementById('totalAmount');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  function formatDuration(mins){
+    const h = Math.floor(mins/60);
+    const m = mins%60;
+    return h + 'h ' + m + 'm';
+  }
+
+  function formatRupee(n){
+    return '₹' + n.toLocaleString('en-IN', {maximumFractionDigits:2, minimumFractionDigits: (n % 1 !== 0) ? 2 : 0});
+  }
+
+  function timeToMinutes(t){
+    const [h,m] = t.split(':').map(Number);
+    return h*60+m;
+  }
+
+  function computeDuration(start, end){
+    let s = timeToMinutes(start);
+    let e = timeToMinutes(end);
+    if (e <= s) e += 24*60;
+    return e - s;
+  }
+
+  function render(){
+    if (entries.length === 0){
+      entryBody.innerHTML = '<tr class="empty-row"><td colspan="6">No entries yet. Add your first block of time above.</td></tr>';
+    } else {
+      entryBody.innerHTML = entries.map(function(e){
+        const rate = parseFloat(rateInput.value) || 0;
+        const amount = (e.minutes/60) * rate;
+        return '<tr data-id="'+e.id+'">' +
+          '<td>'+e.start+'</td>' +
+          '<td>'+e.end+'</td>' +
+          '<td>'+(e.note ? e.note : '&mdash;')+'</td>' +
+          '<td class="num">'+formatDuration(e.minutes)+'</td>' +
+          '<td class="num amount">'+formatRupee(amount)+'</td>' +
+          '<td><button class="del-btn" data-id="'+e.id+'" aria-label="Delete entry">&times;</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    const rate = parseFloat(rateInput.value) || 0;
+    const totalMinutes = entries.reduce(function(sum, e){ return sum + e.minutes; }, 0);
+    const totalAmount = (totalMinutes/60) * rate;
+
+    totalTimeEl.textContent = formatDuration(totalMinutes);
+    totalEntriesEl.textContent = entries.length;
+    totalAmountEl.textContent = formatRupee(totalAmount);
+  }
+
+  addBtn.addEventListener('click', function(){
+    errorMsg.textContent = '';
+    const start = startInput.value;
+    const end = endInput.value;
+    if (!start || !end){
+      errorMsg.textContent = 'Enter both a start and an end time.';
+      return;
+    }
+    const minutes = computeDuration(start, end);
+    if (minutes === 0){
+      errorMsg.textContent = 'Start and end time are the same — nothing to log.';
+      return;
+    }
+    entries.push({
+      id: nextId++,
+      start: start,
+      end: end,
+      note: noteInput.value.trim(),
+      minutes: minutes
+    });
+    startInput.value = '';
+    endInput.value = '';
+    noteInput.value = '';
+    render();
+  });
+
+  entryBody.addEventListener('click', function(ev){
+    const btn = ev.target.closest('.del-btn');
+    if (!btn) return;
+    const id = Number(btn.getAttribute('data-id'));
+    entries = entries.filter(function(e){ return e.id !== id; });
+    render();
+  });
+
+  rateInput.addEventListener('input', render);
+
+  clearBtn.addEventListener('click', function(){
+    if (entries.length === 0) return;
+    if (confirm('Clear all entries for today?')){
+      entries = [];
+      render();
+    }
+  });
+
+  downloadBtn.addEventListener('click', function(){
+    const rate = parseFloat(rateInput.value) || 0;
+    const totalMinutes = entries.reduce(function(sum, e){ return sum + e.minutes; }, 0);
+    const totalAmount = (totalMinutes/60) * rate;
+    const lines = [];
+    lines.push('Time Ledger — ' + new Date().toLocaleDateString('en-IN'));
+    lines.push('Rate: ' + formatRupee(rate) + ' / hour');
+    lines.push('');
+    entries.forEach(function(e){
+      const amount = (e.minutes/60) * rate;
+      lines.push(e.start + ' - ' + e.end + '  |  ' + formatDuration(e.minutes) + '  |  ' + formatRupee(amount) + (e.note ? '  |  ' + e.note : ''));
+    });
+    lines.push('');
+    lines.push('Total time: ' + formatDuration(totalMinutes));
+    lines.push('Day\'s balance: ' + formatRupee(totalAmount));
+
+    const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'time-ledger-' + new Date().toISOString().slice(0,10) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  render();
+</script>
+</body>
+</html>
